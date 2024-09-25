@@ -15,4 +15,16 @@ declare_files(
 declare_cc_toolchains(
     os = {os},
     zig_sdk_path = {zig_sdk_path},
+    copts = {copts},
+    conlyopts = {conlyopts},
+    cxxopts = {cxxopts},
+    linkopts = {linkopts},
+    static_linkopts = {static_linkopts},
+    dynamic_linkopts = {dynamic_linkopts},
+    target_copts = {target_copts},
+    target_conlyopts = {target_conlyopts},
+    target_cxxopts = {target_cxxopts},
+    target_linkopts = {target_linkopts},
+    target_static_linkopts = {target_static_linkopts},
+    target_dynamic_linkopts = {target_dynamic_linkopts},
 )

@@ -8,6 +8,7 @@ load(
     "flag_set",
     "tool",
     "tool_path",
+    "with_feature_set",
 )
 
 all_link_actions = [
@@ -19,6 +20,14 @@ all_link_actions = [
 dynamic_library_link_actions = [
     ACTION_NAMES.cpp_link_dynamic_library,
     ACTION_NAMES.cpp_link_nodeps_dynamic_library,
+]
+
+conly_compile_and_link_actions = [
+    ACTION_NAMES.c_compile,
+]
+
+cxx_compile_and_link_actions = [
+    ACTION_NAMES.cpp_compile,
 ]
 
 compile_and_link_actions = [
@@ -102,6 +111,9 @@ def _zig_cc_toolchain_config_impl(ctx):
         "-D__TIME__=\"redacted\"",
     ]
 
+    static_linking_mode_feature = feature(name = "static_linking_mode")
+    dynamic_linking_mode_feature = feature(name = "dynamic_linking_mode")
+
     compile_and_link_flags = feature(
         name = "compile_and_link_flags",
         enabled = True,
@@ -110,6 +122,18 @@ def _zig_cc_toolchain_config_impl(ctx):
                 actions = compile_and_link_actions,
                 flag_groups = [
                     flag_group(flags = compiler_flags + ctx.attr.copts),
+                ],
+            ),
+            flag_set(
+                actions = conly_compile_and_link_actions,
+                flag_groups = [
+                    flag_group(flags = compiler_flags + ctx.attr.conlyopts),
+                ],
+            ),
+            flag_set(
+                actions = cxx_compile_and_link_actions,
+                flag_groups = [
+                    flag_group(flags = compiler_flags + ctx.attr.cxxopts),
                 ],
             ),
         ],
@@ -122,6 +146,30 @@ def _zig_cc_toolchain_config_impl(ctx):
             flag_set(
                 actions = all_link_actions,
                 flag_groups = [flag_group(flags = ctx.attr.linkopts)],
+            ),
+        )
+
+    if ctx.attr.static_linkopts:
+        link_flag_sets.append(
+            flag_set(
+                actions = [ACTION_NAMES.cpp_link_executable],
+                flag_groups = [flag_group(flags = ctx.attr.static_linkopts)],
+                with_features = [with_feature_set(features = ["static_linking_mode"])],
+            ),
+        )
+
+    if ctx.attr.dynamic_linkopts:
+        link_flag_sets.append(
+            flag_set(
+                actions = [ACTION_NAMES.cpp_link_executable],
+                flag_groups = [flag_group(flags = ctx.attr.dynamic_linkopts)],
+                with_features = [with_feature_set(features = ["dynamic_linking_mode"])],
+            ),
+        )
+        link_flag_sets.append(
+            flag_set(
+                actions = dynamic_library_link_actions,
+                flag_groups = [flag_group(flags = ctx.attr.dynamic_linkopts)],
             ),
         )
 
@@ -164,6 +212,8 @@ def _zig_cc_toolchain_config_impl(ctx):
         default_linker_flags,
         supports_dynamic_linker,
         strip_debug_symbols_feature,
+        static_linking_mode_feature,
+        dynamic_linking_mode_feature,
     ] + _compilation_mode_features(ctx)
 
     artifact_name_patterns = [
@@ -194,10 +244,14 @@ zig_cc_toolchain_config = rule(
     implementation = _zig_cc_toolchain_config_impl,
     attrs = {
         "cxx_builtin_include_directories": attr.string_list(),
-        "linkopts": attr.string_list(),
-        "dynamic_library_linkopts": attr.string_list(),
         "supports_dynamic_linker": attr.bool(),
         "copts": attr.string_list(),
+        "conlyopts": attr.string_list(),
+        "cxxopts": attr.string_list(),
+        "linkopts": attr.string_list(),
+        "static_linkopts": attr.string_list(),
+        "dynamic_linkopts": attr.string_list(),
+        "dynamic_library_linkopts": attr.string_list(),
         "tool_paths": attr.string_dict(),
         "target": attr.string(),
         "target_system_name": attr.string(),

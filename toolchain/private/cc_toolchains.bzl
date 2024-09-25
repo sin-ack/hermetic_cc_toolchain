@@ -1,7 +1,22 @@
 load(":defs.bzl", "target_structs", "zig_tool_path")
 load("@hermetic_cc_toolchain//toolchain:zig_toolchain.bzl", "zig_cc_toolchain_config")
 
-def declare_cc_toolchains(os, zig_sdk_path):
+def declare_cc_toolchains(
+    os,
+    zig_sdk_path,
+    copts,
+    conlyopts,
+    cxxopts,
+    linkopts,
+    static_linkopts,
+    dynamic_linkopts,
+    target_copts,
+    target_conlyopts,
+    target_cxxopts,
+    target_linkopts,
+    target_static_linkopts,
+    target_dynamic_linkopts,
+):
     exe = ".exe" if os == "windows" else ""
 
     for target_config in target_structs():
@@ -29,8 +44,13 @@ def declare_cc_toolchains(os, zig_sdk_path):
 
         dynamic_library_linkopts = target_config.dynamic_library_linkopts
         supports_dynamic_linker = target_config.supports_dynamic_linker
-        copts = target_config.copts
-        linkopts = target_config.linkopts
+
+        full_copts = copts + target_copts.get(zigtarget, []) + target_config.copts
+        full_conlyopts = conlyopts + target_conlyopts.get(zigtarget, [])
+        full_cxxopts = cxxopts + target_cxxopts.get(zigtarget, [])
+        full_linkopts = linkopts + target_linkopts.get(zigtarget, []) + target_config.linkopts
+        full_static_linkopts = static_linkopts + target_static_linkopts.get(zigtarget, [])
+        full_dynamic_linkopts = dynamic_linkopts + target_dynamic_linkopts.get(zigtarget, [])
 
         # We can't pass a list of structs to a rule, so we use json encoding.
         artifact_name_patterns = getattr(target_config, "artifact_name_patterns", [])
@@ -41,8 +61,12 @@ def declare_cc_toolchains(os, zig_sdk_path):
             target = zigtarget,
             tool_paths = tool_paths,
             cxx_builtin_include_directories = cxx_builtin_include_directories,
-            copts = copts,
-            linkopts = linkopts,
+            copts = full_copts,
+            conlyopts = full_conlyopts,
+            cxxopts = full_cxxopts,
+            linkopts = full_linkopts,
+            static_linkopts = full_static_linkopts,
+            dynamic_linkopts = full_dynamic_linkopts,
             dynamic_library_linkopts = dynamic_library_linkopts,
             supports_dynamic_linker = supports_dynamic_linker,
             target_cpu = target_config.bazel_target_cpu,

@@ -60,7 +60,19 @@ def toolchains(
         version = VERSION,
         url_formats = [],
         host_platform_sha256 = HOST_PLATFORM_SHA256,
-        host_platform_ext = _HOST_PLATFORM_EXT):
+        host_platform_ext = _HOST_PLATFORM_EXT,
+        copts = [],
+        conlyopts = [],
+        cxxopts = [],
+        linkopts = [],
+        static_linkopts = [],
+        dynamic_linkopts = [],
+        target_copts = {},
+        target_conlyopts = {},
+        target_cxxopts = {},
+        target_linkopts = {},
+        target_static_linkopts = {},
+        target_dynamic_linkopts = {}):
     """
         Download zig toolchain and declare bazel toolchains.
         The platforms are not registered automatically, that should be done by
@@ -83,6 +95,16 @@ def toolchains(
         url_formats = url_formats,
         host_platform_sha256 = host_platform_sha256,
         host_platform_ext = host_platform_ext,
+        copts = copts,
+        conlyopts = conlyopts,
+        cxxopts = cxxopts,
+        linkopts = linkopts,
+        static_linkopts = static_linkopts,
+        dynamic_linkopts = dynamic_linkopts,
+        target_copts = target_copts,
+        target_conlyopts = target_conlyopts,
+        target_cxxopts = target_cxxopts,
+        target_linkopts = target_linkopts,
     )
 
 def _quote(s):
@@ -134,6 +156,18 @@ def _zig_repository_impl(repository_ctx):
             substitutions = {
                 "{zig_sdk_path}": _quote("external/zig_sdk"),
                 "{os}": _quote(os),
+                "{copts}": json.encode(repository_ctx.attr.copts),
+                "{conlyopts}": json.encode(repository_ctx.attr.conlyopts),
+                "{cxxopts}": json.encode(repository_ctx.attr.cxxopts),
+                "{linkopts}": json.encode(repository_ctx.attr.linkopts),
+                "{static_linkopts}": json.encode(repository_ctx.attr.static_linkopts),
+                "{dynamic_linkopts}": json.encode(repository_ctx.attr.dynamic_linkopts),
+                "{target_copts}": json.encode(repository_ctx.attr.target_copts),
+                "{target_conlyopts}": json.encode(repository_ctx.attr.target_conlyopts),
+                "{target_cxxopts}": json.encode(repository_ctx.attr.target_cxxopts),
+                "{target_linkopts}": json.encode(repository_ctx.attr.target_linkopts),
+                "{target_static_linkopts}": json.encode(repository_ctx.attr.target_static_linkopts),
+                "{target_dynamic_linkopts}": json.encode(repository_ctx.attr.target_dynamic_linkopts),
             },
         )
 
@@ -230,6 +264,18 @@ zig_repository = repository_rule(
         "host_platform_sha256": attr.string_dict(),
         "url_formats": attr.string_list(allow_empty = False),
         "host_platform_ext": attr.string_dict(),
+        "copts": attr.string_list(),
+        "conlyopts": attr.string_list(),
+        "cxxopts": attr.string_list(),
+        "linkopts": attr.string_list(),
+        "static_linkopts": attr.string_list(),
+        "dynamic_linkopts": attr.string_list(),
+        "target_copts": attr.string_list_dict(),
+        "target_conlyopts": attr.string_list_dict(),
+        "target_cxxopts": attr.string_list_dict(),
+        "target_linkopts": attr.string_list_dict(),
+        "target_static_linkopts": attr.string_list_dict(),
+        "target_dynamic_linkopts": attr.string_list_dict(),
     },
     environ = ["HERMETIC_CC_TOOLCHAIN_CACHE_PREFIX"],
     implementation = _zig_repository_impl,
