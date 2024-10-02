@@ -207,6 +207,44 @@ def _zig_cc_toolchain_config_impl(ctx):
         ],
     )
 
+    no_undefined_symbols_feature = feature(
+        name = "no_undefined_symbols",
+        enabled = True,
+        flag_sets = [
+            flag_set(
+                actions = all_link_actions,
+                flag_groups = [
+                    flag_group(flags = ["-Wl,-z,defs"]),
+                ],
+            ),
+        ],
+    )
+
+    lazy_bind_feature = feature(name = "lazy_bind")
+
+    # The default is now-binding, but setting `features = ["lazy_bind"]` will
+    # disable that and enable lazy binding instead.
+    bind_flags = feature(
+        name = "bind_flags",
+        enabled = True,
+        flag_sets = [
+            flag_set(
+                actions = all_link_actions,
+                flag_groups = [
+                    flag_group(flags = ["-Wl,-z,now"]),
+                ],
+                with_features = [with_feature_set(not_features = ["lazy_bind"])],
+            ),
+            flag_set(
+                actions = all_link_actions,
+                flag_groups = [
+                    flag_group(flags = ["-Wl,-z,lazy"]),
+                ],
+                with_features = [with_feature_set(features = ["lazy_bind"])],
+            ),
+        ],
+    )
+
     features = [
         compile_and_link_flags,
         default_linker_flags,
@@ -214,6 +252,9 @@ def _zig_cc_toolchain_config_impl(ctx):
         strip_debug_symbols_feature,
         static_linking_mode_feature,
         dynamic_linking_mode_feature,
+        no_undefined_symbols_feature,
+        bind_flags,
+        lazy_bind_feature,
     ] + _compilation_mode_features(ctx)
 
     artifact_name_patterns = [
