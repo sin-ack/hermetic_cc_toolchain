@@ -10,6 +10,8 @@ package(
 
 declare_files(
     os = {os},
+    extra_files = {extra_files},
+    target_extra_files = {target_extra_files},
 )
 
 declare_cc_toolchains(

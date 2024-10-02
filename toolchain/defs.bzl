@@ -67,12 +67,14 @@ def toolchains(
         linkopts = [],
         static_linkopts = [],
         dynamic_linkopts = [],
+        extra_files = [],
         target_copts = {},
         target_conlyopts = {},
         target_cxxopts = {},
         target_linkopts = {},
         target_static_linkopts = {},
-        target_dynamic_linkopts = {}):
+        target_dynamic_linkopts = {},
+        target_extra_files = {}):
     """
         Download zig toolchain and declare bazel toolchains.
         The platforms are not registered automatically, that should be done by
@@ -101,10 +103,12 @@ def toolchains(
         linkopts = linkopts,
         static_linkopts = static_linkopts,
         dynamic_linkopts = dynamic_linkopts,
+        extra_files = extra_files,
         target_copts = target_copts,
         target_conlyopts = target_conlyopts,
         target_cxxopts = target_cxxopts,
         target_linkopts = target_linkopts,
+        target_extra_files = target_extra_files,
     )
 
 def _quote(s):
@@ -162,12 +166,14 @@ def _zig_repository_impl(repository_ctx):
                 "{linkopts}": json.encode(repository_ctx.attr.linkopts),
                 "{static_linkopts}": json.encode(repository_ctx.attr.static_linkopts),
                 "{dynamic_linkopts}": json.encode(repository_ctx.attr.dynamic_linkopts),
+                "{extra_files}": json.encode(repository_ctx.attr.extra_files),
                 "{target_copts}": json.encode(repository_ctx.attr.target_copts),
                 "{target_conlyopts}": json.encode(repository_ctx.attr.target_conlyopts),
                 "{target_cxxopts}": json.encode(repository_ctx.attr.target_cxxopts),
                 "{target_linkopts}": json.encode(repository_ctx.attr.target_linkopts),
                 "{target_static_linkopts}": json.encode(repository_ctx.attr.target_static_linkopts),
                 "{target_dynamic_linkopts}": json.encode(repository_ctx.attr.target_dynamic_linkopts),
+                "{target_extra_files}" : json.encode(repository_ctx.attr.target_extra_files),
             },
         )
 
@@ -270,12 +276,14 @@ zig_repository = repository_rule(
         "linkopts": attr.string_list(),
         "static_linkopts": attr.string_list(),
         "dynamic_linkopts": attr.string_list(),
+        "extra_files": attr.string_list(),
         "target_copts": attr.string_list_dict(),
         "target_conlyopts": attr.string_list_dict(),
         "target_cxxopts": attr.string_list_dict(),
         "target_linkopts": attr.string_list_dict(),
         "target_static_linkopts": attr.string_list_dict(),
         "target_dynamic_linkopts": attr.string_list_dict(),
+        "target_extra_files": attr.string_list_dict(),
     },
     environ = ["HERMETIC_CC_TOOLCHAIN_CACHE_PREFIX"],
     implementation = _zig_repository_impl,
@@ -285,7 +293,7 @@ def filegroup(name, **kwargs):
     native.filegroup(name = name, **kwargs)
     return ":" + name
 
-def declare_files(os):
+def declare_files(os, extra_files, target_extra_files):
     exe = ".exe" if os == "windows" else ""
 
     native.exports_files(["zig{}".format(exe)], visibility = ["//visibility:public"])
@@ -300,6 +308,7 @@ def declare_files(os):
     lazy_filegroups = {}
 
     for target_config in target_structs():
+        my_extra_files = extra_files + target_extra_files.get(target_config.zigtarget, [])
         all_includes = [native.glob(["lib/{}/**".format(i)]) for i in target_config.includes]
 
         cxx_tool_label = ":" + zig_tool_path(os).format(
@@ -318,7 +327,7 @@ def declare_files(os):
                 ":zig",
                 ":{}_includes".format(target_config.zigtarget),
                 cxx_tool_label,
-            ],
+            ] + my_extra_files,
         )
 
         filegroup(
@@ -337,12 +346,12 @@ def declare_files(os):
                 "lib/tsan/**",
                 "lib/*.zig",
                 "lib/*.h",
-            ]),
+            ]) + my_extra_files,
         )
 
         filegroup(
             name = "{}_ar_files".format(target_config.zigtarget),
-            srcs = [":zig", ":tools/ar{}".format(exe)],
+            srcs = [":zig", ":tools/ar{}".format(exe)] + my_extra_files,
         )
 
         filegroup(
